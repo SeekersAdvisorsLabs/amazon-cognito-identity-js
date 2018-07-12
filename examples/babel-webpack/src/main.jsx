@@ -87,7 +87,7 @@ class SignUpForm extends React.Component {
             console.log('access token + ' + result.getAccessToken().getJwtToken());
             /*Use the idToken for Logins Map when Federating User Pools with identity pools or when passing through an Authorization Header to an API Gateway Authorizer*/
             console.log('idToken + ' + result.idToken.jwtToken);
-            fetch('https://3c6mfx6u25.execute-api.ap-southeast-1.amazonaws.com/test', {
+            fetch('https://jrq5rtzl64.execute-api.ap-southeast-1.amazonaws.com/test', {
               mode: 'cors',
               method: 'GET',
               headers: {
