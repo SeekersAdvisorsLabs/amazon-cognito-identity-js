@@ -1,5 +1,7 @@
 import {Config, CognitoIdentityCredentials} from "aws-sdk";
 import {
+  AuthenticationDetails,
+  CognitoUser,
   CognitoUserPool,
   CognitoUserAttribute
 } from "amazon-cognito-identity-js";
@@ -21,9 +23,14 @@ class SignUpForm extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      name: '',
       email: '',
       password: '',
     };
+  }
+
+  handleNameChange(e) {
+    this.setState({name: e.target.value});
   }
 
   handleEmailChange(e) {
@@ -36,12 +43,17 @@ class SignUpForm extends React.Component {
 
   handleSubmit(e) {
     e.preventDefault();
+    const name = this.state.name.trim();
     const email = this.state.email.trim();
     const password = this.state.password.trim();
     const attributeList = [
       new CognitoUserAttribute({
         Name: 'email',
         Value: email,
+      }),
+      new CognitoUserAttribute({
+        Name: 'name',
+        Value: name,
       })
     ];
     userPool.signUp(email, password, attributeList, null, (err, result) => {
@@ -54,19 +66,79 @@ class SignUpForm extends React.Component {
     });
   }
 
+  handleLogin(e) {
+    e.preventDefault();
+    const email = this.state.email.trim();
+    const password = this.state.password.trim();
+
+    var authenticationData = {
+        Username : email,
+        Password : password,
+    };
+    var authenticationDetails = new AuthenticationDetails(authenticationData);
+
+    var userData = {
+        Username : email,
+        Pool : userPool
+    };
+    var cognitoUser = new CognitoUser(userData);
+    cognitoUser.authenticateUser(authenticationDetails, {
+        onSuccess: function (result) {
+            console.log('access token + ' + result.getAccessToken().getJwtToken());
+            /*Use the idToken for Logins Map when Federating User Pools with identity pools or when passing through an Authorization Header to an API Gateway Authorizer*/
+            console.log('idToken + ' + result.idToken.jwtToken);
+            fetch('https://3c6mfx6u25.execute-api.ap-southeast-1.amazonaws.com/test', {
+              mode: 'cors',
+              method: 'GET',
+              headers: {
+                'Authorization': result.idToken.jwtToken
+              }
+            })
+            .then((response) => {
+              return response.text();
+            })
+            .then((text) => {
+              console.log('response.text(): ' + text);
+            });
+        },
+
+        onFailure: function(err) {
+            alert(err);
+        },
+    });
+  }
+
   render() {
     return (
-      <form onSubmit={this.handleSubmit.bind(this)}>
-        <input type="text"
-               value={this.state.email}
-               placeholder="Email"
-               onChange={this.handleEmailChange.bind(this)}/>
-        <input type="password"
-               value={this.state.password}
-               placeholder="Password"
-               onChange={this.handlePasswordChange.bind(this)}/>
-        <input type="submit"/>
-      </form>
+      <div>
+        <form onSubmit={this.handleSubmit.bind(this)}>
+          <input type="text"
+                 value={this.state.name}
+                 placeholder="Name"
+                 onChange={this.handleNameChange.bind(this)}/>
+          <input type="text"
+                 value={this.state.email}
+                 placeholder="Email"
+                 onChange={this.handleEmailChange.bind(this)}/>
+          <input type="password"
+                 value={this.state.password}
+                 placeholder="Password"
+                 onChange={this.handlePasswordChange.bind(this)}/>
+          <input type="submit"/>
+        </form>
+        <h1>Log in</h1>
+        <form onSubmit={this.handleLogin.bind(this)}>
+          <input type="text"
+                 value={this.state.email}
+                 placeholder="Email"
+                 onChange={this.handleEmailChange.bind(this)}/>
+          <input type="password"
+                 value={this.state.password}
+                 placeholder="Password"
+                 onChange={this.handlePasswordChange.bind(this)}/>
+          <input type="submit"/>
+        </form>
+      </div>
     );
   }
 }
